@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Click the Squares!</title>
+    <meta name="description" content="A Dumb Javascript Game: Click the squares, not the circles.">
+    <meta name="author" content="Lindsey Brockman">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Rock+Salt" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Rock Salt', cursive; 
+            text-align: center;
+        }
+
+        .shape {
+            border: 1px solid white;
+        }
+
+        .circle {
+            -moz-border-radius: 50%;
+            -webkit-border-radius: 50%;
+            border-radius: 50%;
+            position: fixed;
+        }
+        
+        .container {
+            width: 500px;
+            height: 155px;
+            background: #efcbed;
+            display: inline-block;
+        }
+
+        .container a {
+            text-decoration: none;
+        }
+
+        div#yes {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 10px;
+            width: 160px;
+            height: 39px;
+            background: #14bc79;
+        }
+
+    </style>
+
+    <script>
+    $(document).ready(function(){
+        var maxY = $(window).height()
+        var maxX = $(window).width()
+        var clickCounter = 0;
+        var highScore = 0;
+        var stopWatch = 0;
+        var stopWatchInterval;
+        var gamePaused = false;
+        var circleThreshold = Math.floor(Math.random() * 7 + 3)
+
+        // shapes
+        var square = $("<div id='square' class='shape' style='position:fixed;'></div>"); 
+        var circle = $("<div id='circle' class='circle shape'></div>"); 
+        var clickIndicator = $("<div id='clickIndicator' class='circle restart'></div>"); 
+        var restartYes = $("<div id='yes' class='restart shape'>Play Again?</div>"); 
+
+        var bindClickListener = function() {
+            $(window).click(function(e) {
+                if (gamePaused || e.target.id == "yes") {
+                    return;
+                } else if (e.target.id == "square") {
+                    if (stopWatch == 0) {
+                        startStopWatch();
+                    }
+                    $('.shape').stop(true, false);
+                    clickCounter++;
+                    $('.counter').text('clicks: ' + clickCounter);
+                    drawTheBoard();
+                } else {
+                    drawTheClickIndicator(e.clientX, e.clientY);
+                    $('.shape').stop(true, false);
+                    startOver();
+                }
+            })
+        }
+
+        var drawTheBoard = function() {
+            $('body').css({
+                'background': getRandomColor()
+            });
+            $('.shape').remove()
+            $('#clickIndicator').remove()
+            if (clickCounter != circleThreshold) {
+                drawTheSquare(true);
+            } else {
+                drawTheCircle();
+            }
+        }
+
+        var drawTheSquare = function(animate) {
+            var squareClone = square;
+            squareClone.css(getCSS());
+            $("body").append(squareClone);
+            if (animate) {
+                $("#square").animate({
+                    width: 0,
+                    height: 0
+                }, {
+                    duration: 1500, 
+                    done: function() { 
+                        message = "Missed one!\n\n You clicked " + clickCounter + " squares in " + stopWatch / 10 + " seconds"
+                        startOver(message); }
+                });
+            }
+        }
+
+        var drawTheCircle = function() {
+            var circleClone = circle;
+            circleClone.css(getCSS())
+            $("body").append(circleClone);
+            circleThreshold += Math.floor(Math.random() * 7 + 5);
+            $("#circle").animate({
+                width: 0,
+                height: 0
+            }, {
+                duration: 1400, 
+                complete: function() { drawTheBoard(); }
+            });
+        }
+
+        var drawTheClickIndicator = function(posX, posY) {
+            var clickIndicatorClone = clickIndicator;
+            clickIndicatorClone.css({
+                top: posY - 5,
+                left: posX - 5,
+                width: '10px',
+                height: '10px',
+                background: 'red'
+            })
+            $("body").append(clickIndicatorClone);
+        }
+
+        var getCSS = function() {
+            var randomY = Math.floor(Math.random() * maxY);
+            var randomX = Math.floor(Math.random() * maxX);
+            var randomDimensions = Math.floor(Math.random() * 100 + 150);
+            return {
+                'top': randomY / 2,
+                'left': randomX / 2,
+                'width': randomDimensions,
+                'height': randomDimensions,
+                'background': getRandomColor(),
+                'opacity': 0.60
+            }
+        
+        }
+
+        var getRandomColor = function() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++ ) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color; 
+        }
+
+        var startStopWatch = function() {
+            $('.stopwatch').text('timer: ' + stopWatch / 10);
+            stopWatchInterval = setInterval(function () {++stopWatch; $('.stopwatch').text('timer: ' + (stopWatch / 10).toFixed(1));}, 100);
+        }
+
+        var startOver = function() {
+            gamePaused = true;
+            clearInterval(stopWatchInterval);
+            setHighScore();
+            clickCounter = 0;
+            stopWatch = 0;
+            $('body').append(restartYes);
+            $('#yes').one('click', function(e) {
+                $('.counter').text('clicks: ');
+                $('.stopwatch').text('timer: ');
+                $('.restart').remove();
+                $('.shape').remove()
+                circleThreshold = Math.floor(Math.random() * 5 + 3)    
+                gamePaused = false;
+                drawTheSquare(false);
+            });
+        }
+
+        var setHighScore = function() {
+            highScore = clickCounter > highScore ? clickCounter : highScore;
+            $('.highscore').text("high score: " + highScore + " clicks");
+        }
+
+        drawTheSquare(false);
+        bindClickListener();
+
+    });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div>CLICK. THE. SQUARES!!!!!  <a href="https://github.com/lindseybrockman">[source]</a></div>
+        <div class="highscore left">high score: </div>
+        <div class="counter left">clicks: </div>
+        <div class="stopwatch left">timer: </div>
+    </div>
+</body>
+</html>
